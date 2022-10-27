@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <Link rel="stylesheet" href="./styles/styles.css"
+</head>
+
+<body>
+    <div class="container">
+        <div class="ground">
+
+        </div>
+        <div class="dino dino-corriendo">
+
+        </div>
+        <div class="score">
+                0
+        </div>
+        
+    </div>
+    <div>
+        <button class="jump_button" onclick='Jump()'>Jump!</button>
+    </div>
+
+    <script>
+        let time = new Date()
+        let deltaTime = 0;
+
+if(document.readyState === 'complete' || document.readyState=== 'interactive'){
+    setTimeout(Init, 1);
+}
+else{
+    document.addEventListener('DOMContentLoaded', Init);
+}
+
+function Init(){
+    time = new Date();
+    Start();
+    Loop();
+}
+
+function Loop() {
+    deltaTime = (new Date() - time) / 1000;
+    time = new Date()
+    Update()
+    requestAnimationFrame(Loop)
+}
+
+//GAME
+
+let groundY = 22;
+let speedY = 0;
+let impulse = 900;
+let gravity = 2500;
+
+let dinoPosX = 42
+let dinoPosY = groundY
+
+let groundX = 0;
+let speedScenary = 1280/3;
+let gameSpeed = 1;
+let score = 0;
+
+let initialStop = false;
+let jumping = false;
+
+let timeUntillObstacle = 2;
+let timeObstacleMin = 0.7;
+let timeObstacleMax = 1.8;
+let obstaclePosY = 16;
+let obstacles = [];
+
+let timeUntillCloud = 0.5;
+let timeCloudMin = 0.7;
+let timeCloudMax = 2.7;
+let maxCloudY = 270;
+let minCloudY = 100;
+let clouds = [];
+let cloudSpeed = 0.5;
+
+let container;
+let dino;
+let textScore;
+let ground;
+let gameOver;
+
+function Start (){
+    gameOver = document.querySelector(".game-over");
+    ground = document.querySelector(".ground");
+    container = document.querySelector(".container");
+    textScore = document.querySelector(".score");
+    dino = document.querySelector(".dino");
+    document.addEventListener("keydown", HandleKeyDown);
+    
+}
+function HandleKeyDown(ev){
+    if(ev.keyCode == 32){
+        Jump();
+    }
+}
+
+function Jump(){
+    if(dinoPosY === groundY) {
+        jumping = true;
+        speedY = impulse;
+        dino.classList.remove("dino-corriendo")
+    }
+}
+
+function Update () {
+
+    if(initialStop) return;
+
+    moveGround();
+    MoveDinosaur();
+    ChooseCreateObstacles();
+    MoveObstacles();
+    DetectCollision();
+    ChooseCreateClouds();
+    MoveClouds();
+    
+
+
+    speedY -= gravity * deltaTime;
+
+}
+
+function moveGround(){
+    groundX += calculateDisplacement();
+    ground.style.left = -(groundX % container.clientWidth) + "px";
+}
+
+function calculateDisplacement() {
+    return speedScenary * deltaTime * gameSpeed;
+}
+function MoveDinosaur(){
+    dinoPosY += speedY * deltaTime;
+    if(dinoPosY < groundY){
+        Land();
+    }
+    dino.style.bottom = dinoPosY + "px";
+}
+function Land(){
+    dinoPosY = groundY;
+    speedY = 0;
+    if(jumping){
+        dino.classList.add("dino-corriendo");
+    }
+    jumping = false
+}
+
+function ChooseCreateObstacles(){
+     timeUntillObstacle -= deltaTime;
+     if(timeUntillObstacle <=0 ){
+         CreateObstacle();
+     }
+}
+ function ChooseCreateClouds() {
+     timeUntillCloud -= deltaTime;
+     if(timeUntillCloud <= 0) {
+         CreateCloud();
+     }
+ }
+ function CreateCloud() {
+     let cloud = document.createElement("div");
+     container.appendChild(cloud);
+     cloud.classList.add("cloud");
+     cloud.posX = container.clientWidth;
+     cloud.style.left = container.clientWidth+"px";
+     cloud.style.bottom = minCloudY + Math.random() * (maxCloudY-minCloudY)+"px";  
+
+     clouds.push(cloud);
+     timeUntillCloud = timeCloudMin + Math.random() * (timeCloudMax-timeCloudMin) / gameSpeed;
+ }
+ function MoveClouds() {
+     for (var i = clouds.length - 1; i >= 0; i--) {
+         if(clouds[i].posX < -clouds[i].clientWidth) {
+             clouds[i].parentNode.removeChild(clouds[i]);
+             clouds.splice(i, 1);
+         }else{
+             clouds[i].posX -= calculateDisplacement() * cloudSpeed;
+             clouds[i].style.left = clouds[i].posX+"px";
+         }
+     }
+ }
+
+function CreateObstacle(){
+    let obstacle = document.createElement("div");
+    container.appendChild(obstacle);
+    obstacle.classList.add("cactus");
+    obstacle.posX = container.clientWidth;
+    obstacle.style.left = container.clientWidth + "px";
+
+    obstacles.push(obstacle);
+    timeUntillObstacle = timeObstacleMin + Math.random() * (timeObstacleMax-timeObstacleMin) / gameSpeed
+
+}
+
+function MoveObstacles(){
+    for(let i = obstacles.length - 1; i>=0; i--){
+        if(obstacles[i].posX < -obstacles[i].clientWidth) {
+            obstacles[i].parentNode.removeChild(obstacles[i]);
+            obstacles.splice(i,1);
+            WinPoints();
+        }
+        else{
+            obstacles[i].posX -= calculateDisplacement();
+            obstacles[i].style.left = obstacles[i].posX + "px";
+        }
+    }
+}
+
+    function WinPoints() {
+        score++;
+        textScore.innerText = score;
+        if(score == 5){
+            gameSpeed = 1.5;
+            container.classList.add("mediodia");
+
+        }
+        else if(score == 10){
+            gameSpeed = 2;
+            container.classList.add("tarde");
+        }
+        else if(score == 20){
+            gameSpeed = 3;
+            container.classList.add("noche");
+        }
+        else if(score == 30){
+            gameSpeed = 4;
+            container.classList.add("noche");
+        }
+        else if(score == 40){
+            gameSpeed = 5;
+            container.classList.add("noche");
+        }
+        else if(score == 50){
+            gameSpeed = 6;
+            container.classList.add("noche");
+        }
+        
+        ground.style.animationDuration = (3/gameSpeed) + "s";
+    }
+    function DetectCollision() {
+        for(let i = 0; i < obstacles.length; i++){
+            if(obstacles[i].posX > dinoPosX + dino.clientWidth) {
+                //evade
+                break;
+            }
+            else {
+                if(IsCollision(dino, obstacles[i], 10, 30, 15, 20)){
+                    GameOver();
+                }
+            }
+        }
+    }
+
+
+    function IsCollision(a, b, paddingTop, paddingRight, paddingBottom, paddingLeft) {
+    let aRect = a.getBoundingClientRect();
+    let bRect = b.getBoundingClientRect();
+
+    return !(
+        ((aRect.top + aRect.height - paddingBottom) < (bRect.top)) ||
+        (aRect.top + paddingTop > (bRect.top + bRect.height)) ||
+        ((aRect.left + aRect.width - paddingRight) < bRect.left) ||
+        (aRect.left + paddingLeft > (bRect.left + bRect.width))
+    );
+}
+
+function GameOver() {
+    Crash();
+    gameOver.style.display= "block";
+}
+function Crash(){
+    dino.classList.remove("dino-corriendo");
+    dino.classList.add("dino-estrellado");
+}
+
+    </script>
+</body>
+</html>
